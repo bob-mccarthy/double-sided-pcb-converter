@@ -1,5 +1,6 @@
 import numpy as np
 from PIL import Image
+import os
 
 
 THRESHOLD = 150 #Value between 0 and 255 which is the boundary between black and white 
@@ -7,14 +8,21 @@ THRESHOLD = 150 #Value between 0 and 255 which is the boundary between black and
 def main():
     outlineImg = Image.open('./input/outline.png').convert('RGB')
     outlineArr = np.array(outlineImg)
-    print(outlineArr.shape)
+
+    #makes output directory if it does not exist
+    if not os.path.isdir('./output'):
+         os.makedirs('./output')
+
+    #generates the first outline to be cut
     topLeftCorner, bottomRightCorner = findBoardBoundaries(outlineArr)
     padding = generateFirstCut(outlineArr.shape[1], outlineArr.shape[0], topLeftCorner, bottomRightCorner, boundaryOffset=32)
 
+    #resized
     frontCopper = Image.open('./input/front-copper.png').convert('RGB')
     resizeImg(frontCopper, padding, 'front-copper.png')
-    # frontCopper.save('./output/front-copper.png')
     
+    #flips the back traces and outline since the copper with be flipped in the mill
+    #after milling the top layer
     backCopper = Image.open('./input/back-copper.png')
     resizeImg(backCopper.transpose(Image.FLIP_LEFT_RIGHT), padding, 'back-copper.png')
 
@@ -39,6 +47,8 @@ generateFirstCut
         - bottomLeftCorner ([int,int]): position of the bottom left corner of the bounding box of the board
         - endMillDiameter (int): diameter of the endmill in mil (default is 31 mil for a 1/32 in endmill, which is 31.25 mil)
         - boundaryOffset (int): how many mils you want of buffer around the original board 
+    return:
+        - padding around the image (padding measured same as in css)
 
 
 """
@@ -52,10 +62,10 @@ def generateFirstCut(imgWidth, imgHeight, topLeftCorner, bottomRightCorner,endMi
     innerBoxBottomX, innerBoxBottomY = bottomRightCorner[0] + boundaryOffset + totalImagePadding//2, bottomRightCorner[1] + boundaryOffset + totalImagePadding//2
 
     imgArr = [[ [0,0,0] for _ in range(finalImageWidth)] for _ in range(finalImageHeight)]
-    print(len(imgArr))
     boardInnerWidth = innerBoxBottomX - innerBoxTopX 
     boardInnerHeight = innerBoxBottomY - innerBoxTopY
     
+    #generates inner white square of outlien
     for i in range(innerBoxTopY, innerBoxBottomY + 1):
         for j in range(innerBoxTopX, innerBoxBottomX + 1):
                 imgArr[i][j] = [255,255,255]
@@ -64,6 +74,7 @@ def generateFirstCut(imgWidth, imgHeight, topLeftCorner, bottomRightCorner,endMi
     topBoardPegStart = innerBoxBottomX - boardPegWidth
     bottomBoardPegStart = innerBoxTopX + boardPegWidth
 
+    #generates top and bottom pegs
     for i in range(endMillDiameter):
         for j in range(boardPegWidth - i + 1):
              imgArr[innerBoxTopY - i][topBoardPegStart + j + i] = [255,255,255]
@@ -73,11 +84,13 @@ def generateFirstCut(imgWidth, imgHeight, topLeftCorner, bottomRightCorner,endMi
     topBoardPegStart = innerBoxTopY + boardPegHeight
     bottomBoardPegStart = innerBoxBottomY - boardPegHeight
 
+    #generates left and right pegs 
     for i in range(endMillDiameter):
          for j in range(boardPegHeight - i  + 1):
               imgArr[topBoardPegStart - j - i][innerBoxBottomX + i] = [255,255,255]
               imgArr[bottomBoardPegStart + j + i][innerBoxTopX - i] = [255,255,255]
 
+    #generates corners connecting the pegs
     for i in range(endMillDiameter):
         for j in range(endMillDiameter):
              imgArr[innerBoxTopY - i][innerBoxBottomX + j - i] = [255,255,255]
@@ -85,17 +98,19 @@ def generateFirstCut(imgWidth, imgHeight, topLeftCorner, bottomRightCorner,endMi
              
          
     npArr = np.array(imgArr, dtype=np.uint8)
-    print(npArr.shape)
     img = Image.fromarray(npArr, 'RGB')
     img.save('./output/front-outline.png')
-
+    print(f'saved image: front-outline.png')
     return totalImagePadding//2
 
 
 """
     findBoardBoundaries: 
         - takes in a numpy array representing the rgb image of a board outline from gerber2img and returns the
-        top left corner and bottom right corner of the bounding box of the board  
+        top left corner and bottom right corner of the bounding box of the board 
+        params:
+            imgArr [int, int]: numpy array of final outline of the border
+            threshold (int): threshold value for cutoff between black and white
 """
 def findBoardBoundaries(imgArr, threshold = 150):
     intensity = imgArr.sum(axis = 2)
@@ -112,16 +127,21 @@ def findBoardBoundaries(imgArr, threshold = 150):
 
     return (boundingBoxLeft, boundingBoxTop), (boundingBoxRight, boundingBoxBottom)
 
-
+"""
+    resizeImg:
+    - takes in an original image and saves a new image with the appropriate padding of black pixels around it
+    params:
+        - img: PIL rgb image object
+        - padding (int): number of pixels of padding around original image
+        - filename (string): new filename for final image to be saved to  
+"""
 def resizeImg(img, padding, filename):
     imgArr = np.array(img)
-    print()
     imgHeight,imgWidth  = imgArr.shape[0], imgArr.shape[1]
-    print(imgArr.shape)
     resizedImg = np.zeros([imgHeight + padding * 2, imgWidth +padding * 2, 3], dtype= np.uint8)
-    print(resizedImg.shape)
     resizedImg[padding: padding + imgHeight, padding: padding + imgWidth] = imgArr
     img = Image.fromarray(resizedImg, 'RGB')
+    print(f'saved image: {filename}')
     img.save(f'./output/{filename}')
     
 
