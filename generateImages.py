@@ -5,28 +5,27 @@ import os
 
 THRESHOLD = 150 #Value between 0 and 255 which is the boundary between black and white 
 
-def main():
-    outlineImg = Image.open('./input/outline.png').convert('RGB')
+def generateImages(frontCopperPath, backCopperPath, outlinePath, outputPath = os.path.expanduser('~/Downloads')):
+    outlineImg = Image.open(outlinePath).convert('RGB')
     outlineArr = np.array(outlineImg)
-
     #makes output directory if it does not exist
-    if not os.path.isdir('./output'):
-         os.makedirs('./output')
+    if not os.path.isdir(outputPath):
+         print("output path does not exist")
 
     #generates the first outline to be cut
     topLeftCorner, bottomRightCorner = findBoardBoundaries(outlineArr)
-    padding = generateFirstCut(outlineArr.shape[1], outlineArr.shape[0], topLeftCorner, bottomRightCorner, boundaryOffset=32)
+    padding = generateFirstCut(outlineArr.shape[1], outlineArr.shape[0], topLeftCorner, bottomRightCorner,outputPath, boundaryOffset=32)
 
     #resized
-    frontCopper = Image.open('./input/front-copper.png').convert('RGB')
-    resizeImg(frontCopper, padding, 'front-copper.png')
+    frontCopper = Image.open(frontCopperPath).convert('RGB')
+    resizeImg(frontCopper, padding, os.path.join(outputPath, 'front-copper.png'))
     
     #flips the back traces and outline since the copper with be flipped in the mill
     #after milling the top layer
-    backCopper = Image.open('./input/back-copper.png')
-    resizeImg(backCopper.transpose(Image.FLIP_LEFT_RIGHT), padding, 'back-copper.png')
+    backCopper = Image.open(backCopperPath)
+    resizeImg(backCopper.transpose(Image.FLIP_LEFT_RIGHT), padding, os.path.join(outputPath, 'back-copper.png'))
 
-    resizeImg(outlineImg.transpose(Image.FLIP_LEFT_RIGHT), padding, 'back-outline.png')
+    resizeImg(outlineImg.transpose(Image.FLIP_LEFT_RIGHT), padding, os.path.join(outputPath, 'back-outline.png'))
 
 
 
@@ -53,7 +52,7 @@ generateFirstCut
 
 """
 
-def generateFirstCut(imgWidth, imgHeight, topLeftCorner, bottomRightCorner,endMillDiameter = 31, boundaryOffset = 0):
+def generateFirstCut(imgWidth, imgHeight, topLeftCorner, bottomRightCorner,outputPath, endMillDiameter = 31, boundaryOffset = 0):
     totalImagePadding = 2 * (boundaryOffset+endMillDiameter) #make sure there is enough
     finalImageWidth = imgWidth + totalImagePadding
     finalImageHeight = imgHeight + totalImagePadding
@@ -99,7 +98,7 @@ def generateFirstCut(imgWidth, imgHeight, topLeftCorner, bottomRightCorner,endMi
          
     npArr = np.array(imgArr, dtype=np.uint8)
     img = Image.fromarray(npArr, 'RGB')
-    img.save('./output/front-outline.png')
+    img.save(os.path.join(outputPath, 'front-outline.png'), dpi=(1000,1000))
     print(f'saved image: front-outline.png')
     return totalImagePadding//2
 
@@ -142,8 +141,5 @@ def resizeImg(img, padding, filename):
     resizedImg[padding: padding + imgHeight, padding: padding + imgWidth] = imgArr
     img = Image.fromarray(resizedImg, 'RGB')
     print(f'saved image: {filename}')
-    img.save(f'./output/{filename}')
+    img.save(filename, dpi=(1000,1000))
     
-
-if __name__ == '__main__':
-    main()
