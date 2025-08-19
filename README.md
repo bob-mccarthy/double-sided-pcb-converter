@@ -4,21 +4,58 @@
 
 Automating the process for milling double sided pcbs described [here](https://sibusaman.fabcloud.io/doublepcb/)
 
+
 ## How to Run 
 
 Install the dependencies
 
 ```
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 ```
 
-Place your photos into a folder called input in the top directory. The program looks for three files in the input directory: the outline of your board ('outline.png'), the traces on the front copper ('front-copper.png'), and the traces of the back-copper ('back-copper.png'). All of these images must be the same size 
-
-then run
-
+Then run the app
 ```
-pip3 install main.py
+python app.py 
 ```
 
-It will then place four files in the output folder front-copper.png, front-outline.png, 
-back-copper.png, back-outline.png. First mill front-copper.png and front-outline.png. Then flip the pcb inside of the stock and mill back-copper.png and back-outline.png.
+Once the app is running click on the front copper, back copper, and outline buttons and select the corresponding images.
+Then select the size end mill you are using to cut the outline (default is 1/32"). and click generate PCB
+
+<div align = "center">
+    <img src="./img/gui.jpg" width="800"/> 
+</div>
+
+<p align = "center">
+    The generated PCBs will be saved into your Downloads folder. The setup above would produce the example pngs below
+</p>
+
+<div align="center">
+
+| front-copper.png | front-outline.png |
+|------------------|-------------------|
+| <img src="./img/front-copper.png" width="400"/> | <img src="./img/front-outline.png" width="400"/> |
+
+</div>
+
+<div align="center">
+
+| back-copper.png | back-outline.png |
+|-----------------|------------------|
+| <img src="./img/back-copper.png" width="400"/> | <img src="./img/back-outline.png" width="400"/> |
+
+</div>
+
+## Finished Product
+
+<p align = "center">
+    This is what the above images look like when milled on an Roland SRM20 mill
+</p>
+
+<div align="center">
+
+| Front Copper | Back Copper |
+|-----------------|------------------|
+| <img src="./img/front-copper-final.jpeg" width="400"/> | <img src="./img/back-copper-final.jpeg" width="400"/> |
+
+</div>
+
